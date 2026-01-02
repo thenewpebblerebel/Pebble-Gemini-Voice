@@ -1,0 +1,32 @@
+name: Build Pebble app
+
+on:
+  push:
+    branches: [ main, fix/pyserial-docker ]
+  pull_request:
+    branches: [ main, fix/pyserial-docker ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Python2 Docker image
+        run: |
+          docker build -f Dockerfile.py2 -t pebble-tool:ci_py2 .
+
+      - name: Run pebble build inside Python2 container
+        run: |
+          docker run --rm -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /usr/bin/python /usr/local/bin/pebble build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pebble-build
+          path: |
+            build/**
+            *.pbw
+            build/*
