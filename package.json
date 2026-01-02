@@ -1,0 +1,15 @@
+{
+  "name": "pebble-gemini-voice",
+  "author": "VibeCoder",
+  "pebble": {
+    "sdkVersion": "3",
+    "targetPlatforms": ["basalt", "diorite", "emery"],
+    "capabilities": ["configurable"],
+    "messageKeys": {
+      "Query": 0,
+      "Response": 1,
+      "PlayAudio": 2,
+      "StopAudio": 3
+    }
+  }
+}
