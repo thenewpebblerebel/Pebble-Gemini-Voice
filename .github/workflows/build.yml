@@ -23,13 +23,15 @@ jobs:
           echo "Runner uname:"; uname -a
           echo "Runner arch:"; uname -m
           echo "Docker version:"; docker version --format '{{json .Server}}' || docker version
-          echo "Container uname:"; docker run --rm pebble-tool:ci_py2 uname -a || true
-          echo "Container python:"; docker run --rm pebble-tool:ci_py2 python --version || true
-          echo "Check pebble file:"; docker run --rm pebble-tool:ci_py2 file /usr/local/bin/pebble || true
+          echo "Image inspect:"; docker image inspect pebble-tool:ci_py2 --format '{{.Architecture}} {{.Os}} {{.Variant}}' || true
+          echo "Container uname:"; docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 uname -a || true
+          echo "Container python:"; docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 python --version || true
+          echo "List /usr/local/bin:"; docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 ls -l /usr/local/bin || true
+          echo "Check pebble file:"; docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 sh -c 'file /usr/local/bin/pebble || echo "file command missing"' || true
 
       - name: Run pebble build inside Python2 container
         run: |
-          docker run --rm -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /bin/bash -lc 'python /usr/local/bin/pebble build'
+          docker run --rm --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /usr/local/bin/pebble build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
