@@ -10,6 +10,14 @@ RUN sed -i 's/deb.debian.org/archive.debian.org/g; s|security.debian.org|archive
 # Install pebble-tool (legacy toolchain built for Python 2)
 RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git
 
+# Ensure /usr/local/bin/python points to the installed python2 interpreter
+# (some pip-installed console scripts use /usr/local/bin/python as their shebang)
+RUN if [ ! -x "/usr/local/bin/python" ]; then \
+			if [ -x "/usr/bin/python2.7" ]; then ln -sf /usr/bin/python2.7 /usr/local/bin/python; \
+			elif [ -x "/usr/bin/python2" ]; then ln -sf /usr/bin/python2 /usr/local/bin/python; \
+			fi; \
+		fi
+
 ENV PATH="/usr/local/bin:$PATH"
 
 WORKDIR /src
