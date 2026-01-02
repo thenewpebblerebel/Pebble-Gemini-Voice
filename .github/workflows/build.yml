@@ -16,7 +16,7 @@ jobs:
 
       - name: Build Python2 Docker image
         run: |
-          docker build -f Dockerfile.py2 -t pebble-tool:ci_py2 .
+          docker build --platform linux/amd64 -f Dockerfile.py2 -t pebble-tool:ci_py2 .
 
       - name: Debug runner and container
         run: |
