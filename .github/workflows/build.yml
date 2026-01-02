@@ -34,18 +34,32 @@ jobs:
           container=$(docker create --platform=linux/amd64 pebble-tool:ci_py2)
           docker cp "$container":/usr/local/bin/pebble ./pebble_from_image || true
           docker cp "$container":/usr/local/bin/python ./python_from_image || true
+          docker cp "$container":/usr/bin/python2.7 ./python2_7_from_image || true
+          docker cp "$container":/usr/bin/python2 ./python2_from_image || true
           docker cp "$container":/bin/uname ./uname_from_image || true
           docker cp "$container":/bin/ls ./ls_from_image || true
+          docker cp "$container":/lib64/ld-linux-x86-64.so.2 ./ld_linux_from_image || true
+          docker cp "$container":/lib/ld-linux-x86-64.so.2 ./ld_linux_alt_from_image || true
           docker rm "$container" || true
           echo "--- file outputs ---"
           file ./pebble_from_image || true
           file ./python_from_image || true
+          file ./python2_7_from_image || true
+          file ./python2_from_image || true
+          file ./ld_linux_from_image || true
+          file ./ld_linux_alt_from_image || true
           file ./uname_from_image || true
           file ./ls_from_image || true
           echo "--- first lines of pebble_from_image ---"
           sed -n '1,8p' ./pebble_from_image | sed -n l || true
           echo "--- hexdump (64 bytes) of pebble_from_image ---"
           (hexdump -n 64 -C ./pebble_from_image || xxd -l 64 ./pebble_from_image || true)
+          echo "--- python readlink and ldd ---"
+          if [ -e ./python_from_image ]; then readlink -f ./python_from_image || true; ldd ./python_from_image || true; fi
+          if [ -e ./python2_7_from_image ]; then readlink -f ./python2_7_from_image || true; ldd ./python2_7_from_image || true; fi
+          if [ -e ./python2_from_image ]; then readlink -f ./python2_from_image || true; ldd ./python2_from_image || true; fi
+          if [ -e ./ld_linux_from_image ]; then readlink -f ./ld_linux_from_image || true; ldd ./ld_linux_from_image || true; fi
+          if [ -e ./ld_linux_alt_from_image ]; then readlink -f ./ld_linux_alt_from_image || true; ldd ./ld_linux_alt_from_image || true; fi
 
       - name: Run pebble build inside Python2 container
         run: |
