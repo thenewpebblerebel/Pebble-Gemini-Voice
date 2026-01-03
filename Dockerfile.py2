@@ -1,11 +1,8 @@
-FROM debian:buster
+FROM alpine:latest
 
-RUN sed -i 's/deb.debian.org/archive.debian.org/g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list || true \
- && printf 'Acquire::Check-Valid-Until "0";\n' > /etc/apt/apt.conf.d/99no-check-valid-until \
- && apt-get update \
- && apt-get install -y --no-install-recommends build-essential git curl ca-certificates python2.7 python-pip python2.7-dev python2.7-stdlib \
- && pip install --upgrade pip setuptools \
- && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    build-base git curl ca-certificates python2 python2-dev py2-pip \
+    && pip install --upgrade pip setuptools
 
 # Install pebble-tool (legacy toolchain built for Python 2)
 RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git
