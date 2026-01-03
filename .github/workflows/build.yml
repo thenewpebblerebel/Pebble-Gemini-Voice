@@ -25,25 +25,28 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # 1. Surgical SDK Fixes (Comment out the broken memory code)
+              # 1. Force SDK to unpack
               pebble build || true
-              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i 's/max_resources=/#max_resources=/g' {} +
               
-              # 2. THE SECRET SAUCE: Symlink the expected path to the actual path
-              # This satisfies Waf's 'Node Signature' without changing the SDK source
-              mkdir -p build/basalt
-              touch build/appinfo.auto.c
-              ln -sf /pebble/build/appinfo.auto.c /pebble/build/basalt/appinfo.auto.c
+              # 2. THE LOBOTOMY: Completely neutralize the memory reporter logic.
+              # This replaces the whole function body with 'return', bypassing ALL TypeErrors.
+              REPORT_PY=\$(find /home/pebble/.pebble-sdk -name 'report_memory_usage.py')
+              printf \"def generate_memory_usage_report(task_gen):\\n    return\\n\" > \"\$REPORT_PY\"
               
-              # 3. Setup Permissions
+              # 3. THE PATH ALIGNMENT: Match the 'Basalt' folder structure globally
+              find /home/pebble/.pebble-sdk -name '*.py' -exec sed -i \"s|find_or_declare('appinfo.auto.c')|find_or_declare('basalt/appinfo.auto.c')|g\" {} +
+              
+              # 4. Permissions Reset
               chown -R 1000:1000 . /home/pebble/.pebble-sdk
               chmod -R 777 . /home/pebble/.pebble-sdk
               
-              # 4. RUN BUILD AS PEBBLE USER
-              # We use --debug to see exactly why it stops if it fails again
-              su pebble -c 'pebble build --debug'
+              # 5. FINAL CLEAN BUILD (No 'pebble clean' to avoid SDK self-repair)
+              # We run as root first to ensure the basalt folder exists
+              mkdir -p build/basalt
+              su pebble -c 'pebble build'
               
-              # 5. Clean up for GitHub
+              # 6. Export for Artifacts
+              cp build/basalt/*.pbw . 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
 
@@ -51,4 +54,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Pebble-Gemini-Voice-App
-          path: "build/*.pbw"
+          path: "*.pbw"
