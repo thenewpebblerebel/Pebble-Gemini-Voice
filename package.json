@@ -7,7 +7,7 @@
     "uuid": "12345678-1234-1234-1234-123456789abc",
     "projectType": "native",
     "sdkVersion": "3",
-    "targetPlatforms": ["basalt", "diorite", "emery"],
+    "targetPlatforms": ["basalt"],
     "capabilities": ["configurable"],
     "messageKeys": {
       "Query": 0,

@@ -18,13 +18,22 @@ jobs:
         run: |
           rm -rf build .waf* .lock-waf*
 
+      - name: Create placeholder to fix WAF node signature bug
+        run: |
+          mkdir -p build && touch build/appinfo.auto.c
+
+      - name: Build custom Pebble SDK image with memory reporter fix
+        run: |
+          docker build --platform linux/amd64 -t pebble-sdk-patched .
+
       - name: Build Pebble App
         run: |
-          docker run --rm --user root --platform linux/amd64 \
+          docker run --rm --platform linux/amd64 \
             -v "${{ github.workspace }}":/pebble \
             -w /pebble \
-            rebble/pebble-sdk \
-            bash -c "find /root/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \; && pebble build"
+            --user root \
+            pebble-sdk-patched \
+            /bin/bash -c "export HOME=/home/pebble && export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH && cd /pebble && pebble build || (find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \\; && pebble build)"
 
       - name: Check build output
         if: always()

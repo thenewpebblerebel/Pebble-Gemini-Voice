@@ -1,25 +1,21 @@
-FROM python:3.7-slim
+FROM bboehmke/pebble-dev
 
-ENV VENV=/opt/venv
+USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	build-essential git curl ca-certificates \
- && python -m venv $VENV \
- && $VENV/bin/python -m pip install --upgrade pip setuptools wheel \
- && mkdir -p /tmp/build /tmp/wheels
-# Copy vendor patch scripts and wheel builder, then build patched wheels
-COPY tmp/vendor /tmp/vendor
-COPY scripts/build_wheels.sh /tmp/build_wheels.sh
-RUN chmod +x /tmp/build_wheels.sh
-RUN /tmp/build_wheels.sh
+# Create a dummy project to trigger SDK unpacking, then patch the memory reporter
+RUN mkdir -p /tmp/dummy-project && \
+    cd /tmp/dummy-project && \
+    echo '{"name":"dummy","version":"1.0.0","pebble":{"sdkVersion":"3","targetPlatforms":["basalt"],"capabilities":[],"messageKeys":{}}}' > package.json && \
+    mkdir -p src/c && \
+    echo '#include <pebble.h>\nvoid handle_init(void){}\nvoid handle_deinit(void){}\nint main(void){handle_init();app_event_loop();handle_deinit();}' > src/c/main.c && \
+    echo 'def options(ctx):\n    ctx.load("pebble_sdk")\ndef configure(ctx):\n    ctx.load("pebble_sdk")\ndef build(ctx):\n    ctx.load("pebble_sdk")\n    ctx.pbl_program(source=ctx.path.ant_glob("src/**/*.c"), target="pebble-app.elf")\n    ctx.pbl_bundle(elf="pebble-app.elf")' > wscript && \
+    su - pebble -c "cd /tmp/dummy-project && pebble build || true" && \
+    find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \; && \
+    rm -rf /tmp/dummy-project
 
-# Install built wheels first to avoid pip building legacy packages
-RUN $VENV/bin/python -m pip install /tmp/wheels/*.whl || true
+USER pebble
 
-# Install pebble-tool (let pip resolve remaining deps using local wheels)
-RUN $VENV/bin/python -m pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git
+# Set working directory
+WORKDIR /pebble
 
-ENV PATH="$VENV/bin:$PATH"
-
-WORKDIR /src
-ENTRYPOINT ["/bin/bash"]
+CMD ["pebble", "build"]
