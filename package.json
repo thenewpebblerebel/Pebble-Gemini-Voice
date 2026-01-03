@@ -1,5 +1,6 @@
 {
   "name": "pebble-gemini-voice",
+  "version": "1.0.0",
   "author": "VibeCoder",
   "pebble": {
     "sdkVersion": "3",
