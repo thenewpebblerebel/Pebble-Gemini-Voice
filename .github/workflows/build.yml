@@ -25,25 +25,26 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # 1. Force SDK to unpack
+              # 1. FORCE UNPACK (Wait for it to finish or fail)
               pebble build || true
               
-              # 2. THE ULTIMATE SURGERY (Root Mode)
-              # Fix A: The Python Memory Bug
-              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} +
-              # Fix B: The Path Mismatch (The 'Signature' error killer)
-              # This tells the SDK to always look in the basalt subfolder for the auto-generated C file
+              # 2. THE NUCLEAR FIX: Empty the broken file so it can't throw TypeErrors
+              # We don't just edit it; we overwrite it with a 'return' statement
+              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec bash -c \"echo 'def generate_memory_usage_report(task_gen): return' > {}\" \;
+              
+              # 3. FIXED PATH MAPPING: Force the SDK to look in basalt/
               find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i \"s|ctx.path.find_or_declare('appinfo.auto.c')|ctx.path.find_or_declare('basalt/appinfo.auto.c')|g\" {} +
               
-              # 3. Setup Internal Workspace
+              # 4. WORKSPACE & PERMISSIONS
               mkdir -p /inner_pebble && cp -r . /inner_pebble
               chown -R 1000:1000 /inner_pebble /home/pebble/.pebble-sdk
               chmod -R 777 /inner_pebble /home/pebble/.pebble-sdk
               
-              # 4. FINAL ATTEMPT
+              # 5. THE CLEAN BUILD
+              # We avoid 'pebble clean' here to prevent the SDK from resetting its tools
               cd /inner_pebble && su pebble -c 'pebble build'
               
-              # 5. Export the Prize
+              # 6. EXPORT
               cp /inner_pebble/build/basalt/*.pbw /pebble/ 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
