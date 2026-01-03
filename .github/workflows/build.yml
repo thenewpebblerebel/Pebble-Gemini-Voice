@@ -1,4 +1,20 @@
-- name: Build Pebble App
+name: Build Pebble app
+
+on:
+  push:
+    branches: [ main, fix/pyserial-docker ]
+  pull_request:
+    branches: [ main, fix/pyserial-docker ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Pebble App
         run: |
           docker run --rm --platform linux/amd64 \
             -v "${{ github.workspace }}":/pebble \
@@ -29,3 +45,9 @@
               # Step 6: Fix ownership for GitHub (User 1001)
               chown -R 1001:1001 /pebble
             "
+
+      - name: Upload Finished App
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pebble-Gemini-Voice-App
+          path: "*.pbw"
