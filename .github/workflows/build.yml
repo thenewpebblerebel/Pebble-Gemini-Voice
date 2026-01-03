@@ -70,6 +70,8 @@ jobs:
           docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 head -n 1 /usr/local/bin/pebble || true
           echo "--- file info for pebble ---"
           docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 file /usr/local/bin/pebble || true
+          echo "--- verify /usr/local/bin/python is 64-bit ELF executable ---"
+          docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 file /usr/local/bin/python || true
 
       - name: Run pebble build inside Python2 container
         run: |

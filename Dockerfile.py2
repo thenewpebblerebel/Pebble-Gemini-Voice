@@ -3,7 +3,7 @@ FROM python:2.7-slim
 RUN sed -i 's/deb.debian.org/archive.debian.org/g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list || true \
  && printf 'Acquire::Check-Valid-Until "0";\n' > /etc/apt/apt.conf.d/99no-check-valid-until \
  && apt-get update \
- && apt-get install -y --no-install-recommends build-essential git curl ca-certificates python-pip \
+ && apt-get install -y --no-install-recommends build-essential git curl ca-certificates python-pip libpython2.7-dev libpython2.7-stdlib \
  && pip install --upgrade pip setuptools \
  && rm -rf /var/lib/apt/lists/*
 
@@ -19,7 +19,7 @@ RUN if [ ! -x "/usr/local/bin/python" ]; then \
 			cp /usr/bin/python2 /usr/local/bin/python && chmod +x /usr/local/bin/python; \
 		fi; \
 	fi && \
-	sed -i '1s|^.*$|#!/usr/local/bin/python|' /usr/local/bin/pebble && \
+	sed -i '1c#! /usr/local/bin/python' /usr/local/bin/pebble && \
 	chmod +x /usr/local/bin/pebble
 
 ENV PATH="/usr/local/bin:$PATH"
