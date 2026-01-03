@@ -25,7 +25,7 @@ jobs:
         run: docker run --rm --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python --version
 
       - name: Run pebble build inside Docker
-        run: docker run --rm --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python /usr/local/bin/pebble build
+        run: docker run --rm --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src -e PEBBLE_DISABLE_ANALYTICS=1 pebble-tool:ci_py2 python /usr/local/bin/pebble build
 
       - name: Check build output
         if: always()
