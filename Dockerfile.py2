@@ -1,7 +1,7 @@
 FROM python:2.7-buster
 
 # Update sources to use archive.debian.org for EOL Buster repos
-RUN sed -i 's/deb.debian.org/archive.debian.org/g; s|security.debian.org|archive.debian.org/debian-security|g' /etc/apt/sources.list \
+RUN sed -i 's/deb.debian.org/archive.debian.org/g; s|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list \
  && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99no-check-valid-until
 
 # Install build dependencies
