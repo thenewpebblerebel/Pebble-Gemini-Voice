@@ -18,6 +18,14 @@ jobs:
         run: |
           docker run --rm --user root -v "${{ github.workspace }}":/pebble -w /pebble rebble/pebble-sdk pebble build
 
+      - name: Check build output
+        if: always()
+        run: |
+          echo "--- build directory ---"
+          ls -lah build/ || echo "No build dir"
+          echo "--- pbw files ---"
+          find . -name "*.pbw" || echo "No pbw files"
+
       - name: Upload Pebble App Package
         if: always()
         uses: actions/upload-artifact@v4
