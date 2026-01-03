@@ -10,7 +10,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install pebble-tool (legacy toolchain built for Python 2)
-RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git
+RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git sourcemap
 
 WORKDIR /src
 
