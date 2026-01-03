@@ -1,4 +1,20 @@
-- name: Build Pebble App
+name: Build Pebble app
+
+on:
+  push:
+    branches: [ main, fix/pyserial-docker ]
+  pull_request:
+    branches: [ main, fix/pyserial-docker ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Pebble App
         run: |
           docker run --rm --platform linux/amd64 \
             -v "${{ github.workspace }}":/pebble \
@@ -9,23 +25,19 @@
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # Step 1: Force unpack
               pebble build || true
               
-              # Step 2: Setup Workspace
               mkdir -p /inner_pebble && cp -r . /inner_pebble
               chown -R pebble:pebble /inner_pebble
               
-              # Step 3: THE COMBO MOVE
-              # We patch and build in one single 'su' command so nothing can reset
-              su pebble -c \"
-                cd /inner_pebble && \
-                find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} + && \
-                find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i \\\"s|ctx.path.find_or_declare('appinfo.auto.c')|ctx.path.find_or_declare(ctx.env.BUILD_DIR).find_or_declare('appinfo.auto.c')|g\\\" {} + && \
-                pebble build
-              \"
+              su pebble -c \"cd /inner_pebble && find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} + && find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i 's|ctx.path.find_or_declare('\"'\"'appinfo.auto.c'\"'\"')|ctx.path.find_or_declare(ctx.env.BUILD_DIR).find_or_declare('\"'\"'appinfo.auto.c'\"'\"')|g' {} + && pebble build\"
               
-              # Step 4: Export the result
               cp /inner_pebble/build/basalt/*.pbw /pebble/ 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
+
+      - name: Upload Finished App
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pebble-Gemini-Voice-App
+          path: "*.pbw"
