@@ -33,7 +33,30 @@ jobs:
             -w /pebble \
             --user root \
             pebble-sdk-patched \
-            /bin/bash -c "export HOME=/home/pebble && export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH && cd /pebble && pebble build || (find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \\; && pebble build)"
+            /bin/bash -c "
+              export HOME=/home/pebble
+              export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
+              
+              # Clean start
+              pebble clean
+              
+              # First build - will fail with memory reporter error
+              pebble build 2>&1 || true
+              
+              # Patch memory reporter
+              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \;
+              
+              # Second build - will fail at task 11/15 with missing node signature
+              pebble build 2>&1 || true
+              
+              # Create symlink to fix WAF node tracking
+              if [ -f build/basalt/appinfo.auto.c ]; then
+                ln -sf basalt/appinfo.auto.c build/appinfo.auto.c
+              fi
+              
+              # Third build - should complete
+              pebble build
+            "
 
       - name: Check build output
         if: always()
