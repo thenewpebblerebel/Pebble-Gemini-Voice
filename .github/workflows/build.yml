@@ -75,7 +75,7 @@ jobs:
 
       - name: Run pebble build inside Python2 container
         run: |
-          docker run --rm --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /usr/local/bin/pebble build || true
+          docker run --rm --user root --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python /usr/local/bin/pebble build || true
           echo "--- build dir listing ---"
           ls -lah build || true
           echo "--- matching pbw files ---"
@@ -85,7 +85,7 @@ jobs:
         if: always()
         run: |
           echo "Running diagnostics inside container and saving to /src/debug_log.txt"
-          docker run --rm --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 sh -c '{ \
+          docker run --rm --user root --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 sh -c '{ \
             echo "--- ls /usr/local/bin/python ---"; \
             ls -l /usr/local/bin/python || true; \
             echo "--- file /usr/local/bin/python ---"; \
@@ -93,7 +93,7 @@ jobs:
             echo "--- ldd /usr/local/bin/python ---"; \
             ldd /usr/local/bin/python || true; \
             echo "--- pebble build --debug ---"; \
-            /usr/local/bin/pebble build --debug || true; \
+            python /usr/local/bin/pebble build --debug || true; \
           } > /src/debug_log.txt 2>&1'
 
       - name: Upload Pebble App Package

@@ -19,7 +19,7 @@ RUN if [ ! -x "/usr/local/bin/python" ]; then \
 			cp /usr/bin/python2 /usr/local/bin/python && chmod +x /usr/local/bin/python; \
 		fi; \
 	fi && \
-	sed -i '1c#! /usr/local/bin/python' /usr/local/bin/pebble && \
+	sed -i '1c#!/usr/local/bin/python' /usr/local/bin/pebble && \
 	chmod +x /usr/local/bin/pebble
 
 ENV PATH="/usr/local/bin:$PATH"
