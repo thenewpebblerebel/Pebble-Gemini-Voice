@@ -14,9 +14,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Clean build artifacts
+        run: |
+          rm -rf build .waf* .lock-waf*
+
       - name: Build with Rebble SDK
         run: |
-          docker run --rm --user root -v "${{ github.workspace }}":/pebble -w /pebble rebble/pebble-sdk bash -c "pebble build || (find /root/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \; && rm -rf build && pebble build || (ln -sf basalt/appinfo.auto.c build/appinfo.auto.c 2>/dev/null; pebble build))"
+          docker run --rm --user root -v "${{ github.workspace }}":/pebble -w /pebble rebble/pebble-sdk /bin/bash -c "
+            pebble clean &&
+            (pebble build || (
+              find /root/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \; &&
+              pebble clean &&
+              pebble build
+            )) || (
+              ln -sf basalt/appinfo.auto.c build/appinfo.auto.c 2>/dev/null &&
+              pebble build
+            )
+          "
 
       - name: Check build output
         if: always()
