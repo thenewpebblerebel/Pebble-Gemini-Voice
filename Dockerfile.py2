@@ -12,12 +12,16 @@ RUN apt-get update \
 # Install pebble-tool (legacy toolchain built for Python 2)
 RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git sourcemap
 
-# Pre-install the Pebble SDK by downloading it directly
+# Download and install Pebble SDK from Rebble
 RUN mkdir -p /root/.pebble-sdk && touch /root/.pebble-sdk/NO_TRACKING \
- && mkdir -p /root/.pebble-sdk/SDKs \
- && curl -sSL -o /tmp/sdk.tar.bz2 https://github.com/pebble/pebble-sdk-release/archive/refs/tags/v4.5.tar.gz \
- && tar -xzf /tmp/sdk.tar.bz2 -C /root/.pebble-sdk/SDKs --strip-components=1 \
- && rm /tmp/sdk.tar.bz2
+ && mkdir -p /root/pebble-dev \
+ && curl -L -o /tmp/pebble-sdk.tar.bz2 https://developer.rebble.io/s3.amazonaws.com/assets.getpebble.com/pebble-tool/pebble-sdk-4.5-linux64.tar.bz2 \
+ && file /tmp/pebble-sdk.tar.bz2 \
+ && tar -jxf /tmp/pebble-sdk.tar.bz2 -C /root/pebble-dev \
+ && rm /tmp/pebble-sdk.tar.bz2
+
+# Set SDK path so pebble build can find it
+ENV PEBBLE_SDK_PATH=/root/pebble-dev/pebble-sdk-4.5-linux64
 
 WORKDIR /src
 
