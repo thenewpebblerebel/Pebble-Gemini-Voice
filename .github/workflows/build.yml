@@ -14,69 +14,38 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Clean build artifacts
-        run: |
-          rm -rf build .waf* .lock-waf*
-
-      - name: Create placeholder to fix WAF node signature bug
-        run: |
-          mkdir -p build && touch build/appinfo.auto.c
-
-      - name: Build custom Pebble SDK image with memory reporter fix
-        run: |
-          docker build --platform linux/amd64 -t pebble-sdk-patched .
-
       - name: Build Pebble App
         run: |
           docker run --rm --platform linux/amd64 \
             -v "${{ github.workspace }}":/pebble \
             -w /pebble \
             --user root \
-            pebble-sdk-patched \
+            bboehmke/pebble-dev:latest \
             /bin/bash -c "
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              echo '=== Pass 1: Initial build to generate files ==='
-              pebble clean
-              pebble build 2>&1 || true
+              # Step 1: Force SDK to unpack so we can patch it
+              pebble build || true
               
-              echo '=== Patching memory reporter ==='
-              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \;
+              # Step 2: Patch SDK Brain (Fixes Path Mismatch & TypeError)
+              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} +
+              find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i \"s|ctx.path.find_or_declare('appinfo.auto.c')|ctx.path.find_or_declare(ctx.env.BUILD_DIR).find_or_declare('appinfo.auto.c')|g\" {} +
               
-              echo '=== Pass 2: Build with patched reporter (generates appinfo.auto.c) ==='
-              pebble build 2>&1 || true
+              # Step 3: Setup Internal Workspace to avoid volume locks
+              mkdir -p /inner_pebble && cp -r . /inner_pebble
+              chown -R pebble:pebble /inner_pebble && chmod -R 777 /inner_pebble
               
-              echo '=== Creating appinfo.auto.c in expected location BEFORE configure ==='
-              if [ -f build/basalt/appinfo.auto.c ] && [ ! -f build/appinfo.auto.c ]; then
-                cp build/basalt/appinfo.auto.c build/appinfo.auto.c
-                echo 'Copied appinfo.auto.c to build/ directory'
-              fi
+              # Step 4: Final Build (as the pebble user)
+              sudo -u pebble bash -c 'cd /inner_pebble && pebble clean && pebble build'
               
-              echo '=== Pass 3: Clean build directory but keep our copied file ==='
-              rm -f build/.wafpickle* build/.lock-waf* build/c4che/*
-              
-              echo '=== Pass 4: Final build with file already in place ==='
-              pebble build
-              
-              echo '=== Checking for .pbw file ==='
-              find build -name '*.pbw' -ls || echo 'No .pbw file found'
+              # Step 5: Export the prize and fix ownership for GitHub
+              cp /inner_pebble/build/basalt/*.pbw /pebble/ 2>/dev/null || echo 'No PBW found'
+              chown -R 1001:1001 /pebble
             "
 
-      - name: Check build output
-        if: always()
-        run: |
-          echo "--- build directory ---"
-          ls -lah build/ || echo "No build dir"
-          echo "--- pbw files ---"
-          find . -name "*.pbw" || echo "No pbw files"
-
-      - name: Upload Pebble App Package
-        if: always()
+      - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: Pebble-App-Package
-          path: build/*.pbw
-
-
-
+          name: Pebble-Gemini-Voice-App
+          path: "*.pbw"
