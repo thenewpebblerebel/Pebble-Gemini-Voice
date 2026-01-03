@@ -8,7 +8,7 @@
     "projectType": "native",
     "sdkVersion": "3",
     "targetPlatforms": ["basalt"],
-    "capabilities": [" configurable"],
+    "capabilities": ["configurable"],
     "messageKeys": {
       "Query": 0,
       "Response": 1,
