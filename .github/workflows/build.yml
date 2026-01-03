@@ -64,6 +64,13 @@ jobs:
           if [ -e ./ld_linux_from_image ]; then readlink -f ./ld_linux_from_image || true; ldd ./ld_linux_from_image || true; fi
           if [ -e ./ld_linux_alt_from_image ]; then readlink -f ./ld_linux_alt_from_image || true; ldd ./ld_linux_alt_from_image || true; fi
 
+      - name: Verify pebble script shebang
+        run: |
+          echo "--- pebble script shebang (first line) ---"
+          docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 head -n 1 /usr/local/bin/pebble || true
+          echo "--- file info for pebble ---"
+          docker run --rm --platform=linux/amd64 pebble-tool:ci_py2 file /usr/local/bin/pebble || true
+
       - name: Run pebble build inside Python2 container
         run: |
           docker run --rm --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /usr/local/bin/pebble build || true
