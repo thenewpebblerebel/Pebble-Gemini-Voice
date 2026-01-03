@@ -12,6 +12,10 @@ RUN apt-get update \
 # Install pebble-tool (legacy toolchain built for Python 2)
 RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git sourcemap
 
+# Pre-install the Pebble SDK to avoid network requests during build
+RUN mkdir -p /root/.pebble-sdk && touch /root/.pebble-sdk/NO_TRACKING \
+ && pebble sdk install latest || true
+
 WORKDIR /src
 
 # Neutralize entrypoint to allow direct command execution
