@@ -25,13 +25,21 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
+              # 1. Unpack as root
               pebble build || true
               
+              # 2. Patch as root (this will now succeed)
+              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} +
+              find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i 's|ctx.path.find_or_declare('\''appinfo.auto.c'\'')|ctx.path.find_or_declare(ctx.env.BUILD_DIR).find_or_declare('\''appinfo.auto.c'\'')|g' {} +
+              
+              # 3. Workspace setup
               mkdir -p /inner_pebble && cp -r . /inner_pebble
-              chown -R pebble:pebble /inner_pebble
+              chown -R 1000:1000 /inner_pebble /home/pebble/.pebble-sdk
               
-              su pebble -c \"cd /inner_pebble && find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} + && find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i 's|ctx.path.find_or_declare('\"'\"'appinfo.auto.c'\"'\"')|ctx.path.find_or_declare(ctx.env.BUILD_DIR).find_or_declare('\"'\"'appinfo.auto.c'\"'\"')|g' {} + && pebble build\"
+              # 4. Build as pebble user
+              su pebble -c 'cd /inner_pebble && pebble build'
               
+              # 5. Export prize
               cp /inner_pebble/build/basalt/*.pbw /pebble/ 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
