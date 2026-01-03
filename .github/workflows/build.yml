@@ -25,24 +25,25 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # 1. Unpack SDK
+              # 1. Force SDK to unpack
               pebble build || true
               
-              # 2. Workspace setup
-              mkdir -p /inner_pebble && cp -r . /inner_pebble
-              
-              # 3. THE SURGERY: Force the SDK to look in the basalt subfolder
+              # 2. THE ULTIMATE SURGERY (Root Mode)
+              # Fix A: The Python Memory Bug
               find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} +
+              # Fix B: The Path Mismatch (The 'Signature' error killer)
+              # This tells the SDK to always look in the basalt subfolder for the auto-generated C file
               find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i \"s|ctx.path.find_or_declare('appinfo.auto.c')|ctx.path.find_or_declare('basalt/appinfo.auto.c')|g\" {} +
               
-              # 4. Unlock permissions for the pebble user
+              # 3. Setup Internal Workspace
+              mkdir -p /inner_pebble && cp -r . /inner_pebble
               chown -R 1000:1000 /inner_pebble /home/pebble/.pebble-sdk
               chmod -R 777 /inner_pebble /home/pebble/.pebble-sdk
               
-              # 5. THE FINAL BUILD
+              # 4. FINAL ATTEMPT
               cd /inner_pebble && su pebble -c 'pebble build'
               
-              # 6. Export the prize
+              # 5. Export the Prize
               cp /inner_pebble/build/basalt/*.pbw /pebble/ 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
