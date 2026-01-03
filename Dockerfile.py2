@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git sou
 # Pre-install the Pebble SDK by downloading it directly
 RUN mkdir -p /root/.pebble-sdk && touch /root/.pebble-sdk/NO_TRACKING \
  && mkdir -p /root/.pebble-sdk/SDKs \
- && curl -sSL -o /tmp/sdk.tar.bz2 https://github.com/pebble/pebble-sdk-release/releases/download/v4.5/sdk-core-4.5.tar.bz2 \
- && tar -xjf /tmp/sdk.tar.bz2 -C /root/.pebble-sdk/SDKs \
+ && curl -sSL -o /tmp/sdk.tar.bz2 https://github.com/pebble/pebble-sdk-release/archive/refs/tags/v4.5.tar.gz \
+ && tar -xzf /tmp/sdk.tar.bz2 -C /root/.pebble-sdk/SDKs --strip-components=1 \
  && rm /tmp/sdk.tar.bz2
 
 WORKDIR /src
