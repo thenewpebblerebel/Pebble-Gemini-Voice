@@ -12,15 +12,15 @@
               # Step 1: Force SDK to unpack
               pebble build || true
               
-              # Step 2: Surgical SDK Patching (The fixes we know work)
+              # Step 2: Surgical SDK Patching
               find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} +
               find /home/pebble/.pebble-sdk -name 'pebble_sdk_lib.py' -exec sed -i \"s|ctx.path.find_or_declare('appinfo.auto.c')|ctx.path.find_or_declare(ctx.env.BUILD_DIR).find_or_declare('appinfo.auto.c')|g\" {} +
               
-              # Step 3: Setup Internal Workspace (Using user ID 1000 for 'pebble')
+              # Step 3: Setup Internal Workspace (User ID 1000 for pebble)
               mkdir -p /inner_pebble && cp -r . /inner_pebble
               chown -R 1000:1000 /inner_pebble && chmod -R 777 /inner_pebble
               
-              # Step 4: Final Build using 'su' instead of 'sudo'
+              # Step 4: Final Build using 'su'
               su pebble -c 'cd /inner_pebble && pebble clean && pebble build'
               
               # Step 5: Export the prize
