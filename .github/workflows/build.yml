@@ -71,9 +71,32 @@ jobs:
           echo "--- matching pbw files ---"
           ls -lah build/*.pbw || true
 
+      - name: Force Diagnostics (always)
+        if: always()
+        run: |
+          echo "Running diagnostics inside container and saving to /src/debug_log.txt"
+          docker run --rm --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 sh -c '{ \
+            echo "--- ls /usr/local/bin/python ---"; \
+            ls -l /usr/local/bin/python || true; \
+            echo "--- file /usr/local/bin/python ---"; \
+            file /usr/local/bin/python || true; \
+            echo "--- ldd /usr/local/bin/python ---"; \
+            ldd /usr/local/bin/python || true; \
+            echo "--- pebble build --debug ---"; \
+            /usr/local/bin/pebble build --debug || true; \
+          } > /src/debug_log.txt 2>&1'
+
       - name: Upload Pebble App Package
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Pebble-App-Package
           path: |
             build/*.pbw
+
+      - name: Upload debug log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pebble-Debug-Log
+          path: debug_log.txt
