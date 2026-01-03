@@ -14,19 +14,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Build Python2 Docker image
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip build-essential git
+          docker build --platform linux/amd64 -f Dockerfile.py2 -t pebble-tool:ci_py2 .
 
-      - name: Install Pebble SDK
+      - name: Run pebble build inside Docker
         run: |
-          pip3 install --upgrade pip
-          pip3 install pebble-tool
-
-      - name: Build Pebble app
-        run: |
-          pebble build
+          docker run --rm --user root --platform=linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python2.7 /usr/local/bin/pebble build
 
       - name: Check build output
         if: always()
@@ -34,7 +28,7 @@ jobs:
           echo "--- build directory ---"
           ls -lah build/ || echo "No build dir"
           echo "--- pbw files ---"
-          find . -name "*.pbw" -o -name "*.elf" || echo "No binaries found"
+          find . -name "*.pbw" || echo "No pbw files"
 
       - name: Upload Pebble App Package
         if: always()
@@ -42,5 +36,6 @@ jobs:
         with:
           name: Pebble-App-Package
           path: build/*.pbw
+
 
 

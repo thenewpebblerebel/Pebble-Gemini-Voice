@@ -1,30 +1,17 @@
-FROM python:3.9-slim
+FROM python:2.7-slim
 
 RUN sed -i 's/deb.debian.org/archive.debian.org/g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list || true \
  && printf 'Acquire::Check-Valid-Until "0";\n' > /etc/apt/apt.conf.d/99no-check-valid-until \
  && apt-get update \
- && apt-get install -y --no-install-recommends build-essential git curl ca-certificates \
+ && apt-get install -y --no-install-recommends build-essential git curl ca-certificates python-pip \
  && pip install --upgrade pip setuptools \
  && rm -rf /var/lib/apt/lists/*
 
-# Install pebble-tool (may need to use compatible version for Python 3)
-RUN pip install --no-cache-dir 'pebble-tool>=4.5' || pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git || true
-
-# Ensure /usr/local/bin/python points to the installed python interpreter
-# and fix the pebble script's shebang to use that path
-RUN if [ ! -x "/usr/local/bin/python" ]; then \
-		if [ -x "/usr/bin/python3" ]; then \
-			ln -sf /usr/bin/python3 /usr/local/bin/python; \
-		elif [ -x "/usr/bin/python" ]; then \
-			ln -sf /usr/bin/python /usr/local/bin/python; \
-		fi; \
-	fi && \
-	if [ -f "/usr/local/bin/pebble" ]; then \
-		sed -i '1c#!/usr/local/bin/python' /usr/local/bin/pebble && \
-		chmod +x /usr/local/bin/pebble; \
-	fi
+# Install pebble-tool (legacy toolchain built for Python 2)
+RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git
 
 ENV PATH="/usr/local/bin:$PATH"
 
 WORKDIR /src
 ENTRYPOINT ["/bin/bash"]
+
