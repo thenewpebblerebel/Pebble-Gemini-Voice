@@ -21,18 +21,11 @@ jobs:
       - name: Fix permissions
         run: chmod -R 777 .
 
-      - name: Inspect Docker image architecture
-        run: docker inspect pebble-tool:ci_py2 | grep -A 5 Architecture
-
-      - name: Test basic container execution
-        run: docker run --rm --platform linux/amd64 pebble-tool:ci_py2 echo "Container can execute commands"
-
       - name: Test Python in container
-        run: docker run --rm --platform linux/amd64 pebble-tool:ci_py2 python2.7 --version
+        run: docker run --rm --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python --version
 
       - name: Run pebble build inside Docker
-        run: |
-          docker run --rm --user root --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /bin/bash -c "python2.7 /usr/local/bin/pebble build && ls -R build/ || echo 'Build directory not created'"
+        run: docker run --rm --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python /usr/local/bin/pebble build
 
       - name: Check build output
         if: always()
