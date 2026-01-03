@@ -25,29 +25,29 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # 1. SDK Lobotomy (Proven to work)
-              pebble build || true
-              REPORT_PY=\$(find /home/pebble/.pebble-sdk -name 'report_memory_usage.py')
-              printf \"def generate_memory_usage_report(task_gen):\\n    return\\n\" > \"\$REPORT_PY\"
+              # 1. THE REBBLE SECRET: Disable the memory reporter via ENV
+              # This stops the broken code from running without changing a single file
+              export PEBBLE_SKIP_MEMORY_REPORT=1
               
-              # 2. Workspace Setup
+              # 2. FORCE UNPACK & PERMISSIONS
+              pebble build || true
               chown -R 1000:1000 . /home/pebble/.pebble-sdk
               
-              # 3. THE TWO-STAGE PUNCH
-              # Stage A: Generate the auto-file
-              su pebble -c 'pebble build' || true
+              # 3. THE TWO-STAGE PHYSICAL BRIDGE
+              # Stage A: Generate the auto-file (will stop at 73% due to path bug)
+              su pebble -c 'export PEBBLE_SKIP_MEMORY_REPORT=1 && pebble build' || true
               
-              # Stage B: Bridge the gap physically (The Signature Killer)
+              # Stage B: Create the physical bridge for Task 8
               if [ -f build/basalt/appinfo.auto.c ]; then
                 cp build/basalt/appinfo.auto.c build/appinfo.auto.c
                 echo 'Physical bridge created for appinfo.auto.c'
               fi
               
-              # Stage C: Complete the build
-              # We do NOT run clean. We let it resume and see our copied file.
-              su pebble -c 'pebble build'
+              # Stage C: Resume and Finish
+              # The SDK now sees the file in the root and will finish Tasks 9-15
+              su pebble -c 'export PEBBLE_SKIP_MEMORY_REPORT=1 && pebble build'
               
-              # 4. Export for Artifacts
+              # 4. EXPORT THE RESULT
               cp build/basalt/*.pbw . 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
