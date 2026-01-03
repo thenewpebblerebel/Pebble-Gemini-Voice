@@ -12,18 +12,8 @@ RUN apt-get update \
 # Install pebble-tool (legacy toolchain built for Python 2)
 RUN pip install --no-cache-dir git+https://github.com/pebble/pebble-tool.git sourcemap
 
-# Download and install Pebble SDK from pebble-dev GitHub releases
-RUN mkdir -p /root/.pebble-sdk && touch /root/.pebble-sdk/NO_TRACKING \
- && mkdir -p /root/pebble-dev \
- && cd /root/pebble-dev \
- && wget --user-agent="Mozilla/5.0" --content-disposition \
-    "https://github.com/pebble-dev/pebble-sdk/releases/download/v4.5/pebble-sdk-4.5-linux64.tar.bz2" \
- && file pebble-sdk-4.5-linux64.tar.bz2 | grep "bzip2 compressed data" || (echo "DOWNLOAD FAILED" && exit 1) \
- && tar -jxf pebble-sdk-4.5-linux64.tar.bz2 \
- && rm pebble-sdk-4.5-linux64.tar.bz2
-
-# Set SDK path so pebble build can find it
-ENV PEBBLE_SDK_PATH=/root/pebble-dev/pebble-sdk-4.5-linux64
+# Create SDK directory structure and disable tracking
+RUN mkdir -p /root/.pebble-sdk && touch /root/.pebble-sdk/NO_TRACKING
 
 WORKDIR /src
 
