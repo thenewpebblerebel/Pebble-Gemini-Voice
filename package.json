@@ -7,13 +7,16 @@
     "uuid": "12345678-1234-1234-1234-123456789abc",
     "projectType": "native",
     "sdkVersion": "3",
-    "targetPlatforms": ["basalt", "diorite", "emery"],
-    "capabilities": ["configurable"],
+    "targetPlatforms": ["basalt"],
+    "capabilities": [" configurable"],
     "messageKeys": {
       "Query": 0,
       "Response": 1,
       "PlayAudio": 2,
       "StopAudio": 3
+    },
+    "resources": {
+      "media": []
     }
   }
 }

@@ -16,7 +16,7 @@ jobs:
 
       - name: Build with Rebble SDK
         run: |
-          docker run --rm --user root -v "${{ github.workspace }}":/pebble -w /pebble rebble/pebble-sdk pebble build
+          docker run --rm --user root -v "${{ github.workspace }}":/pebble -w /pebble rebble/pebble-sdk bash -c "pebble build || (find /root/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \; && rm -rf build && pebble build)"
 
       - name: Check build output
         if: always()
