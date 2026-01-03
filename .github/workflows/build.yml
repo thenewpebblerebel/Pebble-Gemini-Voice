@@ -37,25 +37,30 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # Clean start
+              echo '=== Pass 1: Initial build to generate files ==='
               pebble clean
-              
-              # First build - will fail with memory reporter error
               pebble build 2>&1 || true
               
-              # Patch memory reporter
+              echo '=== Patching memory reporter ==='
               find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec sed -i '39,60d' {} \;
               
-              # Second build - will fail at task 11/15 with missing node signature
+              echo '=== Pass 2: Build with patched reporter (generates appinfo.auto.c) ==='
               pebble build 2>&1 || true
               
-              # Create symlink to fix WAF node tracking
-              if [ -f build/basalt/appinfo.auto.c ]; then
-                ln -sf basalt/appinfo.auto.c build/appinfo.auto.c
+              echo '=== Creating appinfo.auto.c in expected location BEFORE configure ==='
+              if [ -f build/basalt/appinfo.auto.c ] && [ ! -f build/appinfo.auto.c ]; then
+                cp build/basalt/appinfo.auto.c build/appinfo.auto.c
+                echo 'Copied appinfo.auto.c to build/ directory'
               fi
               
-              # Third build - should complete
+              echo '=== Pass 3: Clean build directory but keep our copied file ==='
+              rm -f build/.wafpickle* build/.lock-waf* build/c4che/*
+              
+              echo '=== Pass 4: Final build with file already in place ==='
               pebble build
+              
+              echo '=== Checking for .pbw file ==='
+              find build -name '*.pbw' -ls || echo 'No .pbw file found'
             "
 
       - name: Check build output
