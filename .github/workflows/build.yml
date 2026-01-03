@@ -11,29 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build Python2 Docker image
+      - name: Build with Rebble SDK
         run: |
-          docker build --platform linux/amd64 -f Dockerfile.py2 -t pebble-tool:ci_py2 .
-
-      - name: Fix permissions
-        run: chmod -R 777 .
-
-      - name: Test Python in container
-        run: docker run --rm --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 python --version
-
-      - name: Run pebble build inside Docker
-        run: docker run --rm --network host --platform linux/amd64 -v "${{ github.workspace }}":/src -w /src pebble-tool:ci_py2 /bin/bash -c "mkdir -p /root/.pebble-sdk && touch /root/.pebble-sdk/NO_TRACKING && python /usr/local/bin/pebble build"
-
-      - name: Check build output
-        if: always()
-        run: |
-          echo "--- build directory ---"
-          ls -lah build/ || echo "No build dir"
-          echo "--- pbw files ---"
-          find . -name "*.pbw" || echo "No pbw files"
+          docker run --rm --user root -v "${{ github.workspace }}":/pebble -w /pebble rebble/pebble-sdk pebble build
 
       - name: Upload Pebble App Package
         if: always()
