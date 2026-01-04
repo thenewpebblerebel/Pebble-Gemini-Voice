@@ -15,18 +15,41 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Pebble App
-        # We add --user root so the container can clean up old build files
         run: |
           docker run --rm \
             --user root \
             -v "${{ github.workspace }}":/pebble \
             -w /pebble \
             ghcr.io/skylord123/docker-coredevices-pebble-tool:latest \
-            /bin/bash -c "pebble build && chown -R 1001:1001 /pebble"
+            /bin/bash -c "
+              # 1. THE ARCHITECTURAL SHADOW
+              # We create a fake module in the local directory that does nothing.
+              echo 'def generate_memory_usage_report(task_gen): return' > /pebble/report_memory_usage.py
+              
+              # 2. THE PYTHON PATH TRICK
+              # We tell the 'pebble' tool to look in our current folder FIRST for modules.
+              # This effectively 'mutes' the broken SDK script without touching SDK files.
+              export PYTHONPATH=/pebble:\$PYTHONPATH
+              
+              # 3. THE CLEAN BUILD
+              # We run 'pebble build'. If it hits the Task 8 signature bug, 
+              # we bridge it and run once more.
+              pebble build || true
+              
+              if [ -f build/basalt/appinfo.auto.c ]; then
+                cp build/basalt/appinfo.auto.c build/appinfo.auto.c
+                echo 'Bridged appinfo.auto.c'
+              fi
+              
+              # Final Pass
+              pebble build
+              
+              # 4. OWNERSHIP FIX
+              chown -R 1001:1001 /pebble
+            "
 
       - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
           name: Pebble-Gemini-Voice-App
-          # The modern image puts the .pbw in the build/ folder
           path: "build/*.pbw"
