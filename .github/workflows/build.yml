@@ -15,17 +15,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Pebble App
-        # This modern image has the 'pebble' tool and SDK already pre-configured for modern Linux
+        # We add --user root so the container can clean up old build files
         run: |
           docker run --rm \
+            --user root \
             -v "${{ github.workspace }}":/pebble \
             -w /pebble \
             ghcr.io/skylord123/docker-coredevices-pebble-tool:latest \
-            pebble build
+            /bin/bash -c "pebble build && chown -R 1001:1001 /pebble"
 
       - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: Pebble-Gemini-Voice-App-${{ github.sha }}
-          # The modern image puts the .pbw in the build/ folder by default
+          name: Pebble-Gemini-Voice-App
+          # The modern image puts the .pbw in the build/ folder
           path: "build/*.pbw"
