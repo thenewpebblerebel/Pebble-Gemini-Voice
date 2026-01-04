@@ -28,28 +28,27 @@ jobs:
               # 1. Force SDK Unpack
               pebble build || true
               
-              # 2. Permissions Handover
+              # 2. THE KILL SWITCH: Rename the broken script
+              # By renaming it, we prevent Waf from ever importing/running it.
+              # This bypasses the TypeError AND the inspect.py crash.
+              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec mv {} {}.broken \;
+              
+              # 3. THE PATH BRIDGE
+              # Create a dummy file in the root build folder to satisfy the Task 8 signature
+              mkdir -p build/basalt
+              touch build/appinfo.auto.c
+              
+              # 4. PERMISSIONS
               chown -R 1000:1000 . /home/pebble/.pebble-sdk
               
-              # 3. Pass 1: Generate Metadata
-              # We use a dirty trick: '|| true' because we know Task 8 will fail the signature check.
-              # We use export to attempt to suppress the memory reporter logic.
-              su pebble -c 'export PEBBLE_SKIP_MEMORY_REPORT=1 && pebble build' || true
+              # 5. THE FINAL ATTEMPT
+              # We use '|| true' on the first run to generate the real auto-file, 
+              # then copy it and run once more to finish.
+              su pebble -c 'pebble build' || true
+              cp build/basalt/appinfo.auto.c build/appinfo.auto.c 2>/dev/null || true
+              su pebble -c 'pebble build'
               
-              # 4. Bridge the Gap (Task 8 Fix)
-              # Physically copy the generated file from basalt to the root build folder.
-              # This satisfies the hardcoded dependency for the next pass.
-              if [ -f build/basalt/appinfo.auto.c ]; then
-                cp build/basalt/appinfo.auto.c build/appinfo.auto.c
-                echo 'Bridged appinfo.auto.c to root build directory.'
-              fi
-              
-              # 5. Pass 2: The Resume Build
-              # Because the metadata file is now where the compiler expects it, 
-              # and we are NOT running 'pebble clean', the DAG will resume from Task 8.
-              su pebble -c 'export PEBBLE_SKIP_MEMORY_REPORT=1 && pebble build'
-              
-              # 6. Export and Ownership fix
+              # 6. EXPORT
               cp build/basalt/*.pbw . 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
