@@ -25,29 +25,31 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # 1. THE REBBLE SECRET: Disable the memory reporter via ENV
-              # This stops the broken code from running without changing a single file
-              export PEBBLE_SKIP_MEMORY_REPORT=1
-              
-              # 2. FORCE UNPACK & PERMISSIONS
+              # 1. Force SDK Unpack
               pebble build || true
+              
+              # 2. Permissions Handover
               chown -R 1000:1000 . /home/pebble/.pebble-sdk
               
-              # 3. THE TWO-STAGE PHYSICAL BRIDGE
-              # Stage A: Generate the auto-file (will stop at 73% due to path bug)
+              # 3. Pass 1: Generate Metadata
+              # We use a dirty trick: '|| true' because we know Task 8 will fail the signature check.
+              # We use export to attempt to suppress the memory reporter logic.
               su pebble -c 'export PEBBLE_SKIP_MEMORY_REPORT=1 && pebble build' || true
               
-              # Stage B: Create the physical bridge for Task 8
+              # 4. Bridge the Gap (Task 8 Fix)
+              # Physically copy the generated file from basalt to the root build folder.
+              # This satisfies the hardcoded dependency for the next pass.
               if [ -f build/basalt/appinfo.auto.c ]; then
                 cp build/basalt/appinfo.auto.c build/appinfo.auto.c
-                echo 'Physical bridge created for appinfo.auto.c'
+                echo 'Bridged appinfo.auto.c to root build directory.'
               fi
               
-              # Stage C: Resume and Finish
-              # The SDK now sees the file in the root and will finish Tasks 9-15
+              # 5. Pass 2: The Resume Build
+              # Because the metadata file is now where the compiler expects it, 
+              # and we are NOT running 'pebble clean', the DAG will resume from Task 8.
               su pebble -c 'export PEBBLE_SKIP_MEMORY_REPORT=1 && pebble build'
               
-              # 4. EXPORT THE RESULT
+              # 6. Export and Ownership fix
               cp build/basalt/*.pbw . 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
