@@ -15,43 +15,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Pebble App
+        # This modern image has the 'pebble' tool and SDK already pre-configured for modern Linux
         run: |
-          docker run --rm --platform linux/amd64 \
+          docker run --rm \
             -v "${{ github.workspace }}":/pebble \
             -w /pebble \
-            --user root \
-            bboehmke/pebble-dev:latest \
-            /bin/bash -c "
-              export HOME=/home/pebble
-              export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
-              
-              # 1. THE ARCHITECTURAL BYPASS: Create a fake 'shadow' module
-              # This file has the same name as the broken SDK script.
-              echo 'def generate_memory_usage_report(task_gen): return' > /pebble/report_memory_usage.py
-              
-              # 2. Force the SDK to prefer our shadow module over its internal ones
-              export PYTHONPATH=/pebble:\$PYTHONPATH
-              
-              # 3. THE TWO-STAGE BRIDGE
-              # Stage A: Initial build (will fail Task 8 signature check, but generate files)
-              su pebble -c 'export PYTHONPATH=/pebble:\$PYTHONPATH && pebble build' || true
-              
-              # Stage B: Bridge the signature gap physically
-              if [ -f build/basalt/appinfo.auto.c ]; then
-                cp build/basalt/appinfo.auto.c build/appinfo.auto.c
-                echo 'Physical bridge created for Task 8.'
-              fi
-              
-              # Stage C: Resume and Finish
-              su pebble -c 'export PYTHONPATH=/pebble:\$PYTHONPATH && pebble build'
-              
-              # 4. EXPORT
-              cp build/basalt/*.pbw . 2>/dev/null || echo 'No PBW found'
-              chown -R 1001:1001 /pebble
-            "
+            ghcr.io/skylord123/docker-coredevices-pebble-tool:latest \
+            pebble build
 
       - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: Pebble-Gemini-Voice-App
-          path: "*.pbw"
+          name: Pebble-Gemini-Voice-App-${{ github.sha }}
+          # The modern image puts the .pbw in the build/ folder by default
+          path: "build/*.pbw"
