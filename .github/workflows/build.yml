@@ -25,30 +25,27 @@ jobs:
               export HOME=/home/pebble
               export PATH=/home/pebble/.pebble-sdk/SDKs/current/bin:\$PATH
               
-              # 1. Force SDK Unpack
-              pebble build || true
+              # 1. THE ARCHITECTURAL BYPASS: Create a fake 'shadow' module
+              # This file has the same name as the broken SDK script.
+              echo 'def generate_memory_usage_report(task_gen): return' > /pebble/report_memory_usage.py
               
-              # 2. THE KILL SWITCH: Rename the broken script
-              # By renaming it, we prevent Waf from ever importing/running it.
-              # This bypasses the TypeError AND the inspect.py crash.
-              find /home/pebble/.pebble-sdk -name 'report_memory_usage.py' -exec mv {} {}.broken \;
+              # 2. Force the SDK to prefer our shadow module over its internal ones
+              export PYTHONPATH=/pebble:\$PYTHONPATH
               
-              # 3. THE PATH BRIDGE
-              # Create a dummy file in the root build folder to satisfy the Task 8 signature
-              mkdir -p build/basalt
-              touch build/appinfo.auto.c
+              # 3. THE TWO-STAGE BRIDGE
+              # Stage A: Initial build (will fail Task 8 signature check, but generate files)
+              su pebble -c 'export PYTHONPATH=/pebble:\$PYTHONPATH && pebble build' || true
               
-              # 4. PERMISSIONS
-              chown -R 1000:1000 . /home/pebble/.pebble-sdk
+              # Stage B: Bridge the signature gap physically
+              if [ -f build/basalt/appinfo.auto.c ]; then
+                cp build/basalt/appinfo.auto.c build/appinfo.auto.c
+                echo 'Physical bridge created for Task 8.'
+              fi
               
-              # 5. THE FINAL ATTEMPT
-              # We use '|| true' on the first run to generate the real auto-file, 
-              # then copy it and run once more to finish.
-              su pebble -c 'pebble build' || true
-              cp build/basalt/appinfo.auto.c build/appinfo.auto.c 2>/dev/null || true
-              su pebble -c 'pebble build'
+              # Stage C: Resume and Finish
+              su pebble -c 'export PYTHONPATH=/pebble:\$PYTHONPATH && pebble build'
               
-              # 6. EXPORT
+              # 4. EXPORT
               cp build/basalt/*.pbw . 2>/dev/null || echo 'No PBW found'
               chown -R 1001:1001 /pebble
             "
